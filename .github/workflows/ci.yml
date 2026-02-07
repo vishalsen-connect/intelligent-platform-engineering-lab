@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Lint YAML
+        uses: ibiqlik/action-yamllint@v3
+
+      - name: Helm lint (if charts added later)
+        run: echo "Helm lint placeholder"

@@ -1,0 +1,6 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Platform post-setup
+      debug:
+        msg: "Ansible post-setup complete"
