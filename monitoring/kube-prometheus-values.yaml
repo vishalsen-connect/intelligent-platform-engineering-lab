@@ -1,9 +1,10 @@
 ---
 grafana:
-  adminPassword: "admin"
+  adminPassword: admin
   service:
     type: ClusterIP
 
 prometheus:
   prometheusSpec:
     retention: 3d
+

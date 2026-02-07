@@ -1,7 +1,7 @@
 ---
 name: CI
 
-on:
+"on":
   push:
     branches: ["main"]
   pull_request:
@@ -22,3 +22,4 @@ jobs:
 
       - name: Helm lint (if charts added later)
         run: echo "Helm lint placeholder"
+
