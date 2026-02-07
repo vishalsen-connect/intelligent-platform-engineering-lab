@@ -7,4 +7,3 @@ grafana:
 prometheus:
   prometheusSpec:
     retention: 3d
-
