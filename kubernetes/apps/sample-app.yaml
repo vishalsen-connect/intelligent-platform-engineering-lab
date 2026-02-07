@@ -27,11 +27,14 @@ spec:
             limits:
               cpu: "200m"
               memory: "128Mi"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: sample-nginx
+  labels:
+    app: sample-nginx
 spec:
   selector:
     app: sample-nginx
