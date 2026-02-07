@@ -22,4 +22,3 @@ jobs:
 
       - name: Helm lint (if charts added later)
         run: echo "Helm lint placeholder"
-
