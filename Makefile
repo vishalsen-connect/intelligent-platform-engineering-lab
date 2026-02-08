@@ -1,5 +1,6 @@
 #############################################
 # Intelligent Platform Engineering Lab
+# Production POC Makefile
 #############################################
 
 SHELL := /bin/bash
@@ -10,7 +11,9 @@ KIND_CONFIG := kind-config.yaml
 
 TERRAFORM_DIR := terraform/local
 K8S_APPS_DIR := kubernetes/apps
+
 MONITORING_VALUES := monitoring/kube-prometheus-values.yaml
+SERVICEMONITOR := monitoring/sample-app-servicemonitor.yaml
 
 ARGOCD_NAMESPACE := argocd
 APP_NAMESPACE := demo
@@ -23,20 +26,34 @@ help:
 	@echo ""
 	@echo "========= PLATFORM LAB COMMANDS ========="
 	@echo ""
-	@echo "make deploy            -> Full Deployment"
-	@echo "make destroy           -> Full Cleanup"
+	@echo "make deploy              -> Full Platform Deployment"
+	@echo "make destroy             -> Full Cleanup"
 	@echo ""
-	@echo "make cluster-create    -> Create KIND cluster"
-	@echo "make cluster-delete    -> Delete KIND cluster"
+	@echo "----- Infrastructure -----"
+	@echo "make cluster-create"
+	@echo "make cluster-delete"
+	@echo "make terraform-apply"
+	@echo "make terraform-destroy"
 	@echo ""
-	@echo "make terraform-apply   -> Apply Terraform"
-	@echo "make terraform-destroy -> Destroy Terraform"
+	@echo "----- GitOps & Monitoring -----"
+	@echo "make argocd-install"
+	@echo "make monitoring-install"
+	@echo "make poc-integrations"
 	@echo ""
-	@echo "make argocd-install    -> Install ArgoCD (Helm)"
-	@echo "make monitoring-install-> Install Monitoring"
-	@echo "make deploy-apps       -> Deploy K8s Apps"
-	@echo "make deploy-ai         -> Setup AI Engine"
-	@echo "make ansible-bootstrap -> Run Ansible Setup"
+	@echo "----- Applications -----"
+	@echo "make deploy-apps"
+	@echo "make destroy-apps"
+	@echo ""
+	@echo "----- AI & Automation -----"
+	@echo "make deploy-ai"
+	@echo "make destroy-ai"
+	@echo "make ansible-bootstrap"
+	@echo ""
+	@echo "----- Utilities -----"
+	@echo "make port-forward-prom"
+	@echo "make port-forward-grafana"
+	@echo "make port-forward-argocd"
+	@echo "make pods"
 	@echo ""
 
 #############################################
@@ -71,11 +88,11 @@ namespaces:
 	kubectl create namespace $(ARGOCD_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 
 #############################################
-# 🔥 ARGOCD INSTALL (FIXED USING HELM)
+# ARGOCD INSTALL
 #############################################
 
 argocd-install:
-	@echo "Installing ArgoCD via Helm (Fix CRD error)"
+	@echo "Installing ArgoCD"
 	helm repo add argo https://argoproj.github.io/argo-helm || true
 	helm repo update
 	helm upgrade --install argocd argo/argo-cd \
@@ -88,7 +105,7 @@ argocd-delete:
 	kubectl delete namespace $(ARGOCD_NAMESPACE) --ignore-not-found
 
 #############################################
-# ARGO APPLICATIONS
+# ARGOCD APPLICATIONS (GitOps)
 #############################################
 
 argocd-apps:
@@ -96,10 +113,11 @@ argocd-apps:
 	kubectl apply -f argocd/apps/
 
 #############################################
-# MONITORING
+# MONITORING STACK
 #############################################
 
 monitoring-install:
+	@echo "Installing Prometheus + Grafana"
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
 	helm repo update
 	helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
@@ -107,12 +125,15 @@ monitoring-install:
 		-n monitoring --create-namespace
 	bash scripts/wait-for-pods.sh monitoring
 
+	@echo "Applying ServiceMonitor"
+	kubectl apply -f $(SERVICEMONITOR)
+
 monitoring-delete:
 	helm uninstall monitoring -n monitoring || true
 	kubectl delete namespace monitoring --ignore-not-found
 
 #############################################
-# KUBERNETES APPS
+# APPLICATION DEPLOYMENT
 #############################################
 
 deploy-apps:
@@ -134,24 +155,43 @@ destroy-ai:
 	rm -rf ai-engine/anomaly-detection/.venv || true
 
 #############################################
-# ANSIBLE
+# ANSIBLE AUTOMATION
 #############################################
 
 ansible-bootstrap:
 	ansible-playbook ansible/setup.yml
 
 #############################################
+# POC INTEGRATION TARGET
+#############################################
+
+poc-integrations:
+	@echo "Applying ArgoCD Applications"
+	kubectl apply -f argocd/apps/
+
+	@echo "Applying Monitoring Integrations"
+	kubectl apply -f $(SERVICEMONITOR)
+
+	@echo "POC Integrations Enabled"
+
+#############################################
 # UTILITIES
 #############################################
 
 port-forward-prom:
-	bash scripts/port-forward-prom.sh
+	kubectl port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 -n monitoring
+
+port-forward-grafana:
+	kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+
+port-forward-argocd:
+	kubectl port-forward svc/argocd-server 8080:443 -n argocd
 
 pods:
 	kubectl get pods -A
 
 #############################################
-# FULL DEPLOY
+# FULL PLATFORM DEPLOYMENT
 #############################################
 
 deploy:
@@ -163,12 +203,13 @@ deploy:
 	$(MAKE) deploy-apps
 	$(MAKE) deploy-ai
 	$(MAKE) ansible-bootstrap
+	$(MAKE) poc-integrations
 	@echo ""
 	@echo "🚀 PLATFORM DEPLOYED SUCCESSFULLY"
 	@echo ""
 
 #############################################
-# FULL DESTROY
+# FULL PLATFORM DESTROY
 #############################################
 
 destroy:

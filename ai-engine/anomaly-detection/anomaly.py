@@ -1,28 +1,21 @@
-from prometheus_api_client import PrometheusConnect
-import pandas as pd
+import requests
 from sklearn.ensemble import IsolationForest
+import numpy as np
 
-PROM_URL = "http://localhost:9090"
+PROM_URL = "http://localhost:9090/api/v1/query"
 
-print("AI Anomaly Engine starting...")
+query = 'sum(rate(container_cpu_usage_seconds_total[1m]))'
 
-try:
-    prom = PrometheusConnect(url=PROM_URL, disable_ssl=True)
-    data = prom.get_current_metric_value(metric_name="up")
+def fetch_metrics():
+    r = requests.get(PROM_URL, params={"query": query})
+    value = float(r.json()["data"]["result"][0]["value"][1])
+    return value
 
-    values = [float(d["value"][1]) for d in data]
-    if not values:
-        print("No metric data.")
-        exit(0)
+data = [fetch_metrics() for _ in range(10)]
 
-    df = pd.DataFrame(values, columns=["metric"])
-    model = IsolationForest(contamination=0.2, random_state=42)
-    df["anomaly"] = model.fit_predict(df)
+model = IsolationForest(contamination=0.1)
+model.fit(np.array(data).reshape(-1, 1))
 
-    print(df)
+prediction = model.predict(np.array(data).reshape(-1, 1))
 
-    if -1 in df["anomaly"].values:
-        print("⚠️ Anomaly detected!")
-
-except Exception as e:
-    print(f"Error: {e}")
+print("Anomaly Detection Result:", prediction)

@@ -1,7 +1,6 @@
----
-- hosts: localhost
-  gather_facts: false
+- name: Auto Remediation Playbook
+  hosts: localhost
   tasks:
-    - name: Platform post-setup
-      debug:
-        msg: "Ansible post-setup complete"
+
+    - name: Restart Sample App
+      shell: kubectl rollout restart deployment sample-app -n demo

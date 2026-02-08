@@ -1,18 +1,16 @@
----
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sample-nginx
+  name: sample-app
   namespace: argocd
 spec:
-  project: default
+  destination:
+    namespace: demo
+    server: https://kubernetes.default.svc
   source:
     repoURL: https://github.com/vishalsen-connect/intelligent-platform-engineering-lab
-    targetRevision: main
     path: kubernetes/apps
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
+    targetRevision: dev
   syncPolicy:
     automated:
       prune: true
