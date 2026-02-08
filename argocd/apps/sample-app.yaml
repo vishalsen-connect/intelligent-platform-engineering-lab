@@ -4,14 +4,21 @@ metadata:
   name: sample-app
   namespace: argocd
 spec:
-  destination:
-    namespace: demo
-    server: https://kubernetes.default.svc
+  project: default
+
   source:
-    repoURL: https://github.com/vishalsen-connect/intelligent-platform-engineering-lab
+    repoURL: https://github.com/vishalsen-connect/intelligent-platform-engineering-lab.git
+    targetRevision: HEAD
     path: kubernetes/apps
-    targetRevision: dev
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-app
+
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
