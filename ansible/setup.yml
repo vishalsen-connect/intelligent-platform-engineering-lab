@@ -1,3 +1,4 @@
+---
 - name: Auto Remediation Playbook
   hosts: localhost
   tasks:
